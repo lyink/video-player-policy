@@ -1,0 +1,148 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Register - VisionTrader{% endblock %}
+
+{% block extra_css %}
+<style>
+    .register-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 4rem);
+        padding: 2rem 0;
+    }
+
+    .register-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        padding: 3rem;
+        width: 100%;
+        max-width: 500px;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .register-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .register-header h1 {
+        color: #667eea;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .register-header p {
+        color: #6c757d;
+        font-size: 0.95rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #495057;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .login-link {
+        text-align: center;
+        margin-top: 1.5rem;
+        color: #6c757d;
+    }
+
+    .login-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .login-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block unauthenticated_content %}
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <h1>Create Account</h1>
+            <p>Join VisionTrader today</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password2">Confirm Password</label>
+                <input type="password" id="password2" name="password2" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </div>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="{% url 'login' %}">Sign in</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

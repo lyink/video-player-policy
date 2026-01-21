@@ -1,0 +1,432 @@
+{% extends 'accounts/base.html' %}
+
+{% block title %}Dashboard - VisionTrader{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Stats Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-primary);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .stat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+
+    .stat-icon.orange {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+
+    .stat-icon.blue {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        line-height: 1;
+    }
+
+    .stat-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+    }
+
+    .stat-change.positive {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--secondary-color);
+    }
+
+    .stat-change.negative {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger-color);
+    }
+
+    /* Firebase Data Styles */
+    .collection-card {
+        background: var(--bg-primary);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+    }
+
+    .collection-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .collection-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .collection-count {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .summary-totals {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-card {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .summary-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-value {
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+        line-height: 1;
+    }
+
+    .summary-count {
+        font-size: 0.75rem;
+        opacity: 0.8;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .data-table th {
+        background: var(--bg-secondary);
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        border-bottom: 2px solid var(--border-color);
+        white-space: nowrap;
+    }
+
+    .data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        font-size: 0.875rem;
+    }
+
+    .data-table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+        background: var(--bg-secondary);
+        transform: scale(1.002);
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    .dark-mode .data-table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--text-secondary);
+        background: var(--bg-primary);
+        border-radius: 16px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+    }
+
+    .no-data svg {
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .no-data h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .no-data p {
+        font-size: 1rem;
+        color: var(--text-secondary);
+    }
+
+    .view-all-link {
+        text-align: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .view-all-link a {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+
+    .view-all-link a:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .collection-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .data-table {
+            font-size: 0.75rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Total Collections</span>
+            <div class="stat-icon purple">📁</div>
+        </div>
+        <div class="stat-value">{{ total_collections|default:0 }}</div>
+        <div class="stat-change positive">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            Active
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Total Documents</span>
+            <div class="stat-icon green">📄</div>
+        </div>
+        <div class="stat-value">{{ total_documents|default:0 }}</div>
+        <div class="stat-change positive">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            Synced
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Total Users</span>
+            <div class="stat-icon orange">👥</div>
+        </div>
+        <div class="stat-value">{{ total_users|default:0 }}</div>
+        <div class="stat-change positive">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            Growing
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Firebase Status</span>
+            <div class="stat-icon blue">🔥</div>
+        </div>
+        <div class="stat-value">{% if all_collections %}Active{% else %}Inactive{% endif %}</div>
+        <div class="stat-change {% if all_collections %}positive{% else %}negative{% endif %}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                {% if all_collections %}
+                <polyline points="18 15 12 9 6 15"/>
+                {% else %}
+                <polyline points="6 9 12 15 18 9"/>
+                {% endif %}
+            </svg>
+            {% if all_collections %}Connected{% else %}Disconnected{% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Firebase Collections Data -->
+{% if all_data %}
+    {% for collection_key, collection_info in all_data.items %}
+        <div class="collection-card">
+            <div class="collection-header">
+                <h2 class="collection-title">{{ collection_info.display_name }}</h2>
+                <span class="collection-count">{{ collection_info.count }} documents</span>
+            </div>
+
+            {% if collection_info.totals %}
+                <div class="summary-totals">
+                    {% for field_name, totals_data in collection_info.totals.items %}
+                        <div class="summary-card">
+                            <div class="summary-label">Total {{ field_name }}</div>
+                            <div class="summary-value">{{ totals_data.value|floatformat:2 }}</div>
+                            <div class="summary-count">From {{ totals_data.count }} documents</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if collection_info.data %}
+                <div style="overflow-x: auto; border-radius: 12px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px; text-align: center;">#</th>
+                                {% for key, value in collection_info.data.0.items %}
+                                    {% if key not in 'id,uid,userId,user_id' %}
+                                        <th>{{ key|title }}</th>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in collection_info.data|slice:":10" %}
+                                <tr>
+                                    <td style="text-align: center; font-weight: 700; color: var(--primary-color);">{{ forloop.counter }}</td>
+                                    {% for key, value in doc.items %}
+                                        {% if key not in 'id,uid,userId,user_id' %}
+                                            <td>
+                                                {% if value is True %}
+                                                    <span style="background: rgba(16, 185, 129, 0.1); color: var(--secondary-color); padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 600; font-size: 0.75rem;">✓ Yes</span>
+                                                {% elif value is False %}
+                                                    <span style="background: rgba(239, 68, 68, 0.1); color: var(--danger-color); padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 600; font-size: 0.75rem;">✗ No</span>
+                                                {% elif value is None %}
+                                                    <span style="color: var(--text-tertiary); font-style: italic;">-</span>
+                                                {% else %}
+                                                    {{ value|truncatechars:50 }}
+                                                {% endif %}
+                                            </td>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if collection_info.count > 10 %}
+                    <div class="view-all-link">
+                        Showing 10 of {{ collection_info.count }} documents.
+                        <a href="{% url 'firebase_data' %}?collection={{ collection_key }}">View all →</a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="no-data" style="padding: 2rem;">
+                    <p>No documents found in this collection.</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="no-data">
+        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M4 7L4 4L20 4L20 7"/>
+            <rect x="4" y="7" width="16" height="13" rx="1"/>
+            <path d="M8 11L16 11M8 15L14 15"/>
+        </svg>
+        <h3>No Firebase Data Available</h3>
+        <p>Connect your Firebase account to view collections and documents.</p>
+        <div style="margin-top: 2rem;">
+            <a href="{% url 'settings' %}" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 0.75rem 2rem; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                Configure Firebase
+            </a>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

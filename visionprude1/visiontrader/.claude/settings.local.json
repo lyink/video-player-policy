@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py startapp:*)",
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(python manage.py migrate:*)",
+      "Bash(python manage.py createsuperuser:*)",
+      "Bash(python manage.py shell:*)",
+      "Bash(python manage.py check:*)",
+      "Bash(find:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
