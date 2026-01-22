@@ -1267,8 +1267,8 @@ class _SettingsScreenState extends State<SettingsScreen>
 
   // Rewarded Ad Methods
   void _showRewardedAdForAdFree() {
-    if (AdMobService.isRewardedInterstitialAdAvailable) {
-      AdMobService.showRewardedInterstitialAd(
+    if (AdMobService.isRewardedAdAvailable) {
+      AdMobService.showRewardedAd(
         onUserEarnedReward: (ad, RewardItem reward) {
           final settingsProvider = Provider.of<SettingsProvider>(
             context,
@@ -1289,8 +1289,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showRewardedAdForSpeedBoost() {
-    if (AdMobService.isRewardedInterstitialAdAvailable) {
-      AdMobService.showRewardedInterstitialAd(
+    if (AdMobService.isRewardedAdAvailable) {
+      AdMobService.showRewardedAd(
         onUserEarnedReward: (ad, RewardItem reward) {
           final settingsProvider = Provider.of<SettingsProvider>(
             context,
@@ -1311,8 +1311,8 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _showRewardedAdForHDQuality() {
-    if (AdMobService.isRewardedInterstitialAdAvailable) {
-      AdMobService.showRewardedInterstitialAd(
+    if (AdMobService.isRewardedAdAvailable) {
+      AdMobService.showRewardedAd(
         onUserEarnedReward: (ad, RewardItem reward) {
           final settingsProvider = Provider.of<SettingsProvider>(
             context,
