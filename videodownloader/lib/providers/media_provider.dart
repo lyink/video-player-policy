@@ -17,6 +17,8 @@ class MediaProvider extends ChangeNotifier {
   MediaFile? _currentMedia;
   int _currentIndex = 0;
   bool _isScanning = false;
+  int _scannedFilesCount = 0;
+  String _currentScanFolder = '';
 
   List<MediaFile> get recentFiles => _recentFiles;
   List<MediaFile> get favorites => _favorites;
@@ -28,6 +30,8 @@ class MediaProvider extends ChangeNotifier {
   MediaFile? get currentMedia => _currentMedia;
   int get currentIndex => _currentIndex;
   bool get isScanning => _isScanning;
+  int get scannedFilesCount => _scannedFilesCount;
+  String get currentScanFolder => _currentScanFolder;
 
   MediaProvider() {
     _loadData();
@@ -335,6 +339,8 @@ class MediaProvider extends ChangeNotifier {
   Future<void> scanAllMediaFiles() async {
     final scanStartTime = DateTime.now();
     _isScanning = true;
+    _scannedFilesCount = 0;
+    _currentScanFolder = 'Initializing...';
     notifyListeners();
 
     try {
@@ -343,20 +349,17 @@ class MediaProvider extends ChangeNotifier {
       final folderMediaMap = <String, List<MediaFile>>{};
 
       if (Platform.isAndroid) {
+        // Prioritize common media folders for faster results
         final storagePaths = [
-          '/storage/emulated/0',
-          '/storage/emulated/0/Download',
-          '/storage/emulated/0/Downloads',
           '/storage/emulated/0/DCIM',
           '/storage/emulated/0/Pictures',
           '/storage/emulated/0/Movies',
           '/storage/emulated/0/Music',
+          '/storage/emulated/0/Download',
+          '/storage/emulated/0/Downloads',
           '/storage/emulated/0/Audio',
           '/storage/emulated/0/Video',
           '/storage/emulated/0/Documents',
-          '/sdcard',
-          '/sdcard/Download',
-          '/sdcard/Downloads',
           '/sdcard/DCIM',
           '/sdcard/Pictures',
           '/sdcard/Movies',
@@ -368,7 +371,9 @@ class MediaProvider extends ChangeNotifier {
             final dir = Directory(path);
             if (await dir.exists() && !scannedPaths.contains(path)) {
               scannedPaths.add(path);
-              await _scanDirectoryForFolders(dir, folderMediaMap, maxDepth: 3);
+              _currentScanFolder = path.split('/').last;
+              notifyListeners();
+              await _scanDirectoryForFolders(dir, folderMediaMap, maxDepth: 4);
             }
           } catch (e) {
             continue;
@@ -377,9 +382,9 @@ class MediaProvider extends ChangeNotifier {
       } else if (Platform.isWindows) {
         final userProfile = Platform.environment['USERPROFILE'] ?? 'C:\\';
         final windowsPaths = [
-          '$userProfile\\Downloads',
           '$userProfile\\Videos',
           '$userProfile\\Music',
+          '$userProfile\\Downloads',
           '$userProfile\\Pictures',
           '$userProfile\\Documents',
           '$userProfile\\Desktop',
@@ -389,7 +394,9 @@ class MediaProvider extends ChangeNotifier {
           try {
             final dir = Directory(path);
             if (await dir.exists()) {
-              await _scanDirectoryForFolders(dir, folderMediaMap, maxDepth: 2);
+              _currentScanFolder = path.split('\\').last;
+              notifyListeners();
+              await _scanDirectoryForFolders(dir, folderMediaMap, maxDepth: 3);
             }
           } catch (e) {
             continue;
@@ -450,6 +457,11 @@ class MediaProvider extends ChangeNotifier {
     if (currentDepth >= maxDepth) return;
 
     try {
+      // Skip hidden and system folders
+      final dirName = directory.path.split(Platform.isWindows ? '\\' : '/').last;
+      if (_shouldSkipFolder(dirName)) return;
+
+      var fileCount = 0;
       await for (final entity in directory.list()) {
         try {
           if (entity is File) {
@@ -460,6 +472,14 @@ class MediaProvider extends ChangeNotifier {
                 folderMediaMap[folderPath] = [];
               }
               folderMediaMap[folderPath]!.add(mediaFile);
+
+              _scannedFilesCount++;
+              fileCount++;
+
+              // Update UI every 10 files for better performance
+              if (fileCount % 10 == 0) {
+                notifyListeners();
+              }
             }
           } else if (entity is Directory && currentDepth < maxDepth - 1) {
             await _scanDirectoryForFolders(entity, folderMediaMap, maxDepth: maxDepth, currentDepth: currentDepth + 1);
@@ -468,9 +488,42 @@ class MediaProvider extends ChangeNotifier {
           continue;
         }
       }
+
+      // Final update for this folder
+      if (fileCount > 0) {
+        notifyListeners();
+      }
     } catch (e) {
       return;
     }
+  }
+
+  bool _shouldSkipFolder(String folderName) {
+    // Skip hidden folders (starting with .)
+    if (folderName.startsWith('.')) return true;
+
+    // Skip system/cache folders
+    final skipFolders = [
+      'Android',
+      'android',
+      'cache',
+      'Cache',
+      'temp',
+      'Temp',
+      'tmp',
+      'thumbnails',
+      'Thumbnails',
+      '.trash',
+      'Trash',
+      'lost+found',
+      'System Volume Information',
+      '\$RECYCLE.BIN',
+      'node_modules',
+      'build',
+      'dist',
+    ];
+
+    return skipFolders.contains(folderName);
   }
 
   Future<void> _scanDirectoryRecursively(Directory directory, List<MediaFile> mediaFiles, {int maxDepth = 2, int currentDepth = 0}) async {

@@ -1292,7 +1292,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 32),
             Text(
-              mediaProvider.isScanning ? 'Scanning...' : 'No Media Found',
+              mediaProvider.isScanning ? 'Scanning Media...' : 'No Media Found',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.bold,
@@ -1302,7 +1302,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             const SizedBox(height: 12),
             Text(
               mediaProvider.isScanning
-                  ? 'Searching for videos and audio files'
+                  ? 'Found ${mediaProvider.scannedFilesCount} files'
                   : 'Start by scanning for media files',
               style: TextStyle(
                 fontSize: 15,
@@ -1312,6 +1312,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               textAlign: TextAlign.center,
             ),
+            if (mediaProvider.isScanning && mediaProvider.currentScanFolder.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Scanning: ${mediaProvider.currentScanFolder}',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).primaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             if (!mediaProvider.isScanning) ...[
               const SizedBox(height: 32),
               Container(
