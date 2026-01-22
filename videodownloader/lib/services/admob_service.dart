@@ -2,47 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdMobService {
-  static const String appId = 'ca-app-pub-3408903389045590~5719529565';
+  // Video Player Pro - All Format
+  static const String appId = 'ca-app-pub-3408903389045590~3476269948';
 
-  // Banner Ad IDs
-  static const String bannerAdId = 'ca-app-pub-3408903389045590/4406447894'; // video-player - 1
+  // Banner Ad ID
+  static const String bannerAdId = 'ca-app-pub-3408903389045590/9020240664';
 
-  // App Open Ad IDs
-  static const String appOpenAdId = 'ca-app-pub-3408903389045590/8768364732'; // app-open-video-player-1
+  // App Open Ad ID
+  static const String appOpenAdId = 'ca-app-pub-3408903389045590/6338237008';
 
-  // Interstitial Ad IDs
-  static const String interstitialAdId = 'ca-app-pub-3408903389045590/6300331105'; // interstitial-video Player-1
+  // Interstitial Ad ID
+  static const String interstitialAdId = 'ca-app-pub-3408903389045590/3308092448';
 
-  // Native Advanced Ad IDs
-  static const String nativeAdvancedAdId = 'ca-app-pub-3408903389045590/7200310421'; // native advanced
+  // Native Reward Ad ID
+  static const String nativeRewardAdId = 'ca-app-pub-3408903389045590/1388506110';
 
-  // Rewarded Interstitial Ad IDs (primary)
-  static const String rewardedInterstitialAdId = 'ca-app-pub-3408903389045590/6225089737'; // rewarded-intestitial
-
-  // Rewarded Interstitial Ad IDs (secondary)
-  static const String rewardedInterstitialAdId2 = 'ca-app-pub-3408903389045590/3887751378'; // reward interstitial
+  // Rewarded Ad ID
+  static const String rewardedAdId = 'ca-app-pub-3408903389045590/9926128227';
 
   static BannerAd? _bannerAd;
   static AppOpenAd? _appOpenAd;
   static InterstitialAd? _interstitialAd;
-  static RewardedInterstitialAd? _rewardedInterstitialAd;
+  static RewardedAd? _rewardedAd;
   static NativeAd? _nativeAd;
   static bool _isAppOpenAdLoading = false;
   static bool _isInterstitialAdLoading = false;
-  static bool _isRewardedInterstitialAdLoading = false;
+  static bool _isRewardedAdLoading = false;
   static bool _isNativeAdLoading = false;
   static DateTime? _lastAppOpenAdShown;
   static DateTime? _lastInterstitialAdShown;
   static DateTime? _lastBannerAdShown;
-  static const int _appOpenAdCooldownSeconds = 30; // Show app-open ads every 30 seconds
-  static const int _interstitialAdCooldownSeconds = 15; // Show interstitial ads every 15 seconds (very frequent!)
-  static const int _bannerAdCooldownSeconds = 10; // Show banner ads every 10 seconds
+  static DateTime? _lastRewardedAdShown;
+  static const int _appOpenAdCooldownSeconds = 45; // Show app-open ads every 45 seconds
+  static const int _interstitialAdCooldownSeconds = 60; // Show interstitial ads every 60 seconds (very frequent!)
+  static const int _bannerAdCooldownSeconds = 0; // Show banner ads always (no cooldown)
+  static const int _rewardedAdCooldownSeconds = 30; // Show reward ads every 30 seconds
 
   static Future<void> initialize() async {
     await MobileAds.instance.initialize();
     loadAppOpenAd();
     loadInterstitialAd();
-    loadRewardedInterstitialAd();
+    loadRewardedAd();
     loadNativeAd();
   }
 
@@ -174,53 +174,64 @@ class AdMobService {
 
   static bool get isInterstitialAdAvailable => _interstitialAd != null && _canShowInterstitialAd();
 
-  // Rewarded Interstitial Ad Methods
-  static void loadRewardedInterstitialAd() {
-    if (_isRewardedInterstitialAdLoading || _rewardedInterstitialAd != null) return;
+  // Rewarded Ad Methods
+  static void loadRewardedAd() {
+    if (_isRewardedAdLoading || _rewardedAd != null) return;
 
-    _isRewardedInterstitialAdLoading = true;
-    RewardedInterstitialAd.load(
-      adUnitId: rewardedInterstitialAdId,
+    _isRewardedAdLoading = true;
+    RewardedAd.load(
+      adUnitId: rewardedAdId,
       request: const AdRequest(),
-      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
-          print('Rewarded interstitial ad loaded');
-          _rewardedInterstitialAd = ad;
-          _isRewardedInterstitialAdLoading = false;
-          _rewardedInterstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+          print('Rewarded ad loaded');
+          _rewardedAd = ad;
+          _isRewardedAdLoading = false;
+          _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
-              print('Rewarded interstitial ad dismissed');
-              _rewardedInterstitialAd = null;
-              loadRewardedInterstitialAd(); // Load next ad
+              print('Rewarded ad dismissed');
+              _rewardedAd = null;
+              loadRewardedAd(); // Load next ad
             },
             onAdFailedToShowFullScreenContent: (ad, error) {
-              print('Rewarded interstitial ad failed to show: $error');
-              _rewardedInterstitialAd = null;
-              loadRewardedInterstitialAd(); // Load next ad
+              print('Rewarded ad failed to show: $error');
+              _rewardedAd = null;
+              loadRewardedAd(); // Load next ad
             },
           );
         },
         onAdFailedToLoad: (error) {
-          print('Rewarded interstitial ad failed to load: $error');
-          _isRewardedInterstitialAdLoading = false;
+          print('Rewarded ad failed to load: $error');
+          _isRewardedAdLoading = false;
+          // Retry loading after 5 seconds
+          Future.delayed(const Duration(seconds: 5), loadRewardedAd);
         },
       ),
     );
   }
 
-  static void showRewardedInterstitialAd({
+  static void showRewardedAd({
     required Function(AdWithoutView, RewardItem) onUserEarnedReward,
     Function()? onAdDismissed,
   }) {
-    if (_rewardedInterstitialAd != null) {
-      _rewardedInterstitialAd!.show(
+    if (_rewardedAd != null && _canShowRewardedAd()) {
+      _rewardedAd!.show(
         onUserEarnedReward: onUserEarnedReward,
       );
-      _rewardedInterstitialAd = null;
+      _lastRewardedAdShown = DateTime.now();
+      _rewardedAd = null;
     }
   }
 
-  static bool get isRewardedInterstitialAdAvailable => _rewardedInterstitialAd != null;
+  static bool _canShowRewardedAd() {
+    if (_lastRewardedAdShown == null) return true;
+
+    final now = DateTime.now();
+    final timeSinceLastAd = now.difference(_lastRewardedAdShown!);
+    return timeSinceLastAd.inSeconds >= _rewardedAdCooldownSeconds;
+  }
+
+  static bool get isRewardedAdAvailable => _rewardedAd != null && _canShowRewardedAd();
 
   // Native Ad Methods
   static void loadNativeAd() {
@@ -228,7 +239,7 @@ class AdMobService {
 
     _isNativeAdLoading = true;
     _nativeAd = NativeAd(
-      adUnitId: nativeAdvancedAdId,
+      adUnitId: nativeRewardAdId,
       request: const AdRequest(),
       listener: NativeAdListener(
         onAdLoaded: (ad) {
@@ -310,7 +321,7 @@ class AdMobService {
     _bannerAd?.dispose();
     _appOpenAd?.dispose();
     _interstitialAd?.dispose();
-    _rewardedInterstitialAd?.dispose();
+    _rewardedAd?.dispose();
     _nativeAd?.dispose();
   }
 }

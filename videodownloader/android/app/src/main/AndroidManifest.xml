@@ -122,10 +122,10 @@
             </intent-filter>
         </receiver>
 
-        <!-- AdMob App ID -->
+        <!-- AdMob App ID - Video Player Pro - All Format -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3408903389045590~5719529565"/>
+            android:value="ca-app-pub-3408903389045590~3476269948"/>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
