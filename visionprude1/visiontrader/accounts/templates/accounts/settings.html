@@ -1,6 +1,7 @@
 {% extends 'accounts/base.html' %}
 
 {% block title %}Settings - VisionTrader{% endblock %}
+{% block page_title %}Settings{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -745,14 +746,15 @@
 
                         <div class="form-group">
                             <label class="form-label" for="db_password">Password</label>
-                            <input type="password" id="db_password" name="db_password" class="form-input" value="{{ settings.db_password }}" placeholder="••••••••">
-                            <span class="form-help">Password will be stored securely</span>
+                            <input type="password" id="db_password" name="db_password" class="form-input" value="" placeholder="{% if settings.db_password %}••••••••{% else %}Enter database password{% endif %}">
+                            <span class="form-help">Leave empty to keep current password. Password will be stored securely.</span>
                         </div>
                     </div>
 
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Save Configuration</button>
-                        <button type="button" class="btn btn-secondary">Test Connection</button>
+                        <button type="button" id="testConnectionBtn" class="btn btn-secondary">Test Connection</button>
+                        <span id="connectionTestResult" style="margin-left: 1rem; font-weight: 600;"></span>
                     </div>
                 </div>
 
@@ -799,7 +801,18 @@
 
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Save Preferences</button>
-                        <button type="button" class="btn btn-secondary">Reset to Default</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetPreferences()">Reset to Default</button>
+                    </div>
+                    <div class="alert-box info" style="margin-top: 1rem;">
+                        <svg class="alert-icon info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <div class="alert-content">
+                            <div class="alert-title">Theme Changes</div>
+                            <div class="alert-message">Theme changes will take effect immediately. You can also toggle dark mode using the button in the top navigation bar.</div>
+                        </div>
                     </div>
                 </div>
 
@@ -943,7 +956,7 @@
         form.addEventListener('submit', function(e) {
             const newPassword = document.getElementById('new_password');
             const confirmPassword = document.getElementById('confirm_password');
-            
+
             if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
                 e.preventDefault();
                 alert('Passwords do not match!');
@@ -951,5 +964,84 @@
             }
         });
     });
+
+    // Test Database Connection
+    const testConnectionBtn = document.getElementById('testConnectionBtn');
+    const connectionTestResult = document.getElementById('connectionTestResult');
+
+    if (testConnectionBtn) {
+        testConnectionBtn.addEventListener('click', async function() {
+            const btn = this;
+            const originalText = btn.innerHTML;
+
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" opacity="0.75"/></svg> Testing...';
+            connectionTestResult.textContent = '';
+
+            // Get form data
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            formData.append('db_engine', document.getElementById('db_engine').value);
+            formData.append('db_name', document.getElementById('db_name').value);
+            formData.append('db_host', document.getElementById('db_host').value);
+            formData.append('db_port', document.getElementById('db_port').value);
+            formData.append('db_user', document.getElementById('db_user').value);
+            formData.append('db_password', document.getElementById('db_password').value);
+
+            try {
+                const response = await fetch('{% url "test_database" %}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    connectionTestResult.style.color = '#10b981';
+                    connectionTestResult.textContent = '✓ ' + data.message;
+                } else {
+                    connectionTestResult.style.color = '#ef4444';
+                    connectionTestResult.textContent = '✗ ' + (data.error || 'Connection failed');
+                }
+            } catch (error) {
+                connectionTestResult.style.color = '#ef4444';
+                connectionTestResult.textContent = '✗ Error: ' + error.message;
+            } finally {
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Reset Preferences to Default
+    function resetPreferences() {
+        if (confirm('Are you sure you want to reset preferences to default values?')) {
+            document.getElementById('theme').value = 'light';
+            document.getElementById('language').value = 'en';
+            document.getElementById('timezone').value = 'UTC';
+        }
+    }
+
+    // Apply theme immediately when changed in settings
+    const themeSelect = document.getElementById('theme');
+    if (themeSelect) {
+        themeSelect.addEventListener('change', function() {
+            const body = document.body;
+            if (this.value === 'dark') {
+                body.classList.add('dark-mode');
+            } else {
+                body.classList.remove('dark-mode');
+            }
+        });
+    }
 </script>
+
+<style>
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
 {% endblock %}

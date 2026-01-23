@@ -10,4 +10,8 @@ urlpatterns = [
     path('settings/', views.settings_view, name='settings'),
     path('firebase-data/', views.firebase_data_view, name='firebase_data'),
     path('sync-firebase/', views.sync_firebase_to_db, name='sync_firebase'),
+    path('check-firebase-updates/', views.check_firebase_updates, name='check_firebase_updates'),
+    path('test-database/', views.test_database_connection, name='test_database'),
+    path('data/<str:model_name>/', views.model_list_view, name='model_list'),
+    path('data/<str:model_name>/<int:pk>/', views.model_detail_view, name='model_detail'),
 ]

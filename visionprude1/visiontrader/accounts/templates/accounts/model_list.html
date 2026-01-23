@@ -1,0 +1,423 @@
+{% extends 'accounts/base.html' %}
+{% load model_filters %}
+
+{% block title %}{{ model_config.display_name }} - VisionTrader{% endblock %}
+
+{% block extra_css %}
+<style>
+    .model-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+    }
+
+    .model-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .model-icon {
+        font-size: 3rem;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .model-title h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .model-count {
+        margin: 0.5rem 0 0 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .model-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .search-box {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+
+    .search-form {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .search-btn, .clear-btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .search-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .search-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .clear-btn {
+        background: #f7fafc;
+        color: #4a5568;
+    }
+
+    .clear-btn:hover {
+        background: #e2e8f0;
+    }
+
+    .data-table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .data-table th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+    }
+
+    .data-table tbody tr {
+        transition: all 0.3s;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f7fafc;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .field-value {
+        font-size: 0.95rem;
+        color: #2d3748;
+    }
+
+    .field-value.truncate {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .status-badge.success {
+        background: #c6f6d5;
+        color: #22543d;
+    }
+
+    .status-badge.pending {
+        background: #fef3c7;
+        color: #78350f;
+    }
+
+    .status-badge.failed {
+        background: #fed7d7;
+        color: #742a2a;
+    }
+
+    .status-badge.active {
+        background: #bee3f8;
+        color: #2c5282;
+    }
+
+    .view-btn {
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .view-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+        padding: 1rem;
+    }
+
+    .pagination a, .pagination .current {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .pagination a {
+        background: white;
+        color: #4a5568;
+        border: 2px solid #e2e8f0;
+    }
+
+    .pagination a:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+
+    .pagination .current {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .empty-state h3 {
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: #718096;
+    }
+
+    .back-btn {
+        padding: 0.75rem 1.5rem;
+        background: white;
+        color: #4a5568;
+        border: 2px solid white;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .back-btn:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="model-header">
+    <div class="model-header-left">
+        <div class="model-icon">{{ model_config.icon }}</div>
+        <div class="model-title">
+            <h1>{{ model_config.display_name }}</h1>
+            <p class="model-count">{{ total_count }} record{{ total_count|pluralize }}</p>
+        </div>
+    </div>
+    <div class="model-actions">
+        <a href="{% url 'dashboard' %}" class="back-btn">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="search-box">
+    <form method="GET" class="search-form">
+        <input type="text"
+               name="search"
+               value="{{ search_query }}"
+               placeholder="Search {{ model_config.display_name|lower }}..."
+               class="search-input">
+        <button type="submit" class="search-btn">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+            </svg>
+            Search
+        </button>
+        {% if search_query %}
+        <a href="{% url 'model_list' model_name %}" class="clear-btn">
+            Clear
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+{% if page_obj %}
+<div class="data-table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                {% for field in model_config.fields %}
+                <th>{{ field|replace:"_: " }}</th>
+                {% endfor %}
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for obj in page_obj %}
+            <tr>
+                <td>
+                    <span class="field-value" style="font-weight: 600; color: var(--primary-color);">
+                        {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+                    </span>
+                </td>
+                {% for field in model_config.fields %}
+                <td>
+                    {% with value=obj|get_field:field %}
+                    {% if field == 'status' %}
+                        <span class="status-badge {{ value|lower }}">{{ value|default:"-" }}</span>
+                    {% elif field == 'amount' or field == 'paid' or field == 'entry_price' or field == 'target_price' or field == 'stop_loss' %}
+                        <span class="field-value">${{ value|default:"0"|floatformat:2 }}</span>
+                    {% elif field == 'read' or field == 'completed' or field == 'is_premium' or field == 'is_active' or field == 'is_published' or field == 'is_approved' or field == 'is_sent' %}
+                        <span class="field-value">{% if value %}✓{% else %}✗{% endif %}</span>
+                    {% elif field == 'message' or field == 'description' or field == 'comment' %}
+                        <span class="field-value truncate">{{ value|default:"-" }}</span>
+                    {% else %}
+                        <span class="field-value">{{ value|default:"-" }}</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                {% endfor %}
+                <td>
+                    <a href="{% url 'model_detail' model_name obj.pk %}" class="view-btn">View Details</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+    {% if page_obj.has_previous %}
+        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">First</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Previous</a>
+    {% endif %}
+
+    <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">Last</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="data-table-container">
+    <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <h3>No Records Found</h3>
+        {% if search_query %}
+        <p>No results for "{{ search_query }}". Try a different search term.</p>
+        {% else %}
+        <p>There are no {{ model_config.display_name|lower }} in the database yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Custom template filter replacement for Django template limitations
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle field value display for complex fields
+    const fieldValues = document.querySelectorAll('.field-value');
+    fieldValues.forEach(function(el) {
+        // Truncate long text with ellipsis
+        if (el.classList.contains('truncate') && el.textContent.length > 50) {
+            el.title = el.textContent;
+        }
+    });
+});
+</script>
+{% endblock %}

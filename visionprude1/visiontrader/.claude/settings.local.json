@@ -9,7 +9,16 @@
       "Bash(python manage.py check:*)",
       "Bash(find:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(python manage.py runserver:*)",
+      "Bash(timeout 3 tail:*)",
+      "Bash(exit 0)",
+      "Bash(timeout:*)",
+      "Bash(curl:*)"
     ]
   }
 }

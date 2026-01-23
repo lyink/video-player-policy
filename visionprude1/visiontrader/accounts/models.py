@@ -175,3 +175,203 @@ class UserProgress(models.Model):
 
     def __str__(self):
         return f"Progress {self.firebase_id} - {self.total_completed} completed"
+
+
+class PremiumSignal(models.Model):
+    """Model for premium signals from Firebase"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase document ID")
+
+    signal_type = models.CharField(max_length=100, blank=True)
+    symbol = models.CharField(max_length=50, blank=True)
+    entry_price = models.DecimalField(max_digits=15, decimal_places=8, null=True, blank=True)
+    stop_loss = models.DecimalField(max_digits=15, decimal_places=8, null=True, blank=True)
+    take_profit = models.DecimalField(max_digits=15, decimal_places=8, null=True, blank=True)
+
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    status = models.CharField(max_length=50, blank=True)
+
+    signal_date = models.DateTimeField(null=True, blank=True)
+    expiry_date = models.DateTimeField(null=True, blank=True)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-signal_date']
+        verbose_name = "Premium Signal"
+        verbose_name_plural = "Premium Signals"
+
+    def __str__(self):
+        return f"Signal {self.firebase_id} - {self.symbol}"
+
+
+class PremiumSignalSubscription(models.Model):
+    """Model for premium signal subscriptions from Firebase"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase document ID")
+    firebase_user_id = models.CharField(max_length=255, blank=True, help_text="Firebase user ID")
+
+    subscription_type = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=50, blank=True)
+
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    auto_renew = models.BooleanField(default=False)
+
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-start_date']
+        verbose_name = "Premium Signal Subscription"
+        verbose_name_plural = "Premium Signal Subscriptions"
+
+    def __str__(self):
+        return f"Subscription {self.firebase_id} - {self.subscription_type}"
+
+
+class Course(models.Model):
+    """Model for courses from Firebase"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase document ID")
+
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    instructor = models.CharField(max_length=255, blank=True)
+
+    duration = models.IntegerField(null=True, blank=True, help_text="Duration in minutes")
+    level = models.CharField(max_length=50, blank=True)
+    category = models.CharField(max_length=100, blank=True)
+
+    thumbnail_url = models.URLField(max_length=500, blank=True)
+    video_count = models.IntegerField(default=0)
+
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    is_free = models.BooleanField(default=False)
+    is_published = models.BooleanField(default=True)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Course"
+        verbose_name_plural = "Courses"
+
+    def __str__(self):
+        return f"Course {self.firebase_id} - {self.title}"
+
+
+class FCMToken(models.Model):
+    """Model for FCM tokens from Firebase"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase document ID (token)")
+    firebase_user_id = models.CharField(max_length=255, blank=True, help_text="Firebase user ID")
+
+    token = models.TextField(help_text="FCM device token")
+    platform = models.CharField(max_length=50, blank=True)
+    device_info = models.TextField(blank=True)
+
+    is_active = models.BooleanField(default=True)
+    last_used = models.DateTimeField(null=True, blank=True)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-last_used']
+        verbose_name = "FCM Token"
+        verbose_name_plural = "FCM Tokens"
+
+    def __str__(self):
+        return f"Token {self.firebase_id[:20]}..."
+
+
+class AppNotification(models.Model):
+    """Model for app notifications from Firebase"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase document ID")
+
+    title = models.CharField(max_length=255, blank=True)
+    message = models.TextField(blank=True)
+    notification_type = models.CharField(max_length=100, blank=True)
+
+    target_audience = models.CharField(max_length=100, blank=True, help_text="all, premium, free, etc.")
+    priority = models.CharField(max_length=20, blank=True)
+
+    scheduled_date = models.DateTimeField(null=True, blank=True)
+    sent_date = models.DateTimeField(null=True, blank=True)
+
+    is_sent = models.BooleanField(default=False)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "App Notification"
+        verbose_name_plural = "App Notifications"
+
+    def __str__(self):
+        return f"Notification {self.firebase_id} - {self.title}"
+
+
+class Testimonial(models.Model):
+    """Model for testimonials from Firebase"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase document ID")
+    firebase_user_id = models.CharField(max_length=255, blank=True, help_text="Firebase user ID")
+
+    author_name = models.CharField(max_length=255, blank=True)
+    author_email = models.EmailField(blank=True)
+    author_avatar = models.URLField(max_length=500, blank=True)
+
+    content = models.TextField(blank=True)
+    rating = models.IntegerField(null=True, blank=True)
+
+    is_approved = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Testimonial"
+        verbose_name_plural = "Testimonials"
+
+    def __str__(self):
+        return f"Testimonial by {self.author_name}"
+
+
+class FirebaseUser(models.Model):
+    """Model for Firebase users"""
+    firebase_id = models.CharField(max_length=255, unique=True, help_text="Firebase user ID")
+
+    email = models.EmailField(blank=True)
+    display_name = models.CharField(max_length=255, blank=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+
+    photo_url = models.URLField(max_length=500, blank=True)
+
+    is_premium = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    last_login = models.DateTimeField(null=True, blank=True)
+    account_created = models.DateTimeField(null=True, blank=True)
+
+    # Metadata
+    synced_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Firebase User"
+        verbose_name_plural = "Firebase Users"
+
+    def __str__(self):
+        return f"User {self.email or self.firebase_id}"

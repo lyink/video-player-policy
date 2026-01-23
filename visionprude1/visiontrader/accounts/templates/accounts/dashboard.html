@@ -1,432 +1,822 @@
 {% extends 'accounts/base.html' %}
 
 {% block title %}Dashboard - VisionTrader{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Stats Grid */
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* Modern Stats Grid */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
 
     .stat-card {
         background: var(--bg-primary);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-md);
-        transition: all 0.3s ease;
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: 1px solid var(--border-color);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        transform: scaleX(0);
+        transition: transform 0.3s;
     }
 
     .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-8px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+    }
+
+    .stat-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .stat-card a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
     }
 
     .stat-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon.purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .stat-icon.orange { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+    .stat-icon.blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+    .stat-icon.pink { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); }
+    .stat-icon.indigo { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
+
+    .stat-content {
+        flex: 1;
     }
 
     .stat-label {
         font-size: 0.875rem;
         color: var(--text-secondary);
-        font-weight: 500;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
     }
 
-    .stat-icon {
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        line-height: 1;
+        margin-bottom: 0.75rem;
+    }
+
+    .stat-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+    }
+
+    .stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+
+    .stat-badge.success {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--secondary-color);
+    }
+
+    .stat-badge.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+    }
+
+    .view-data-link {
+        margin-top: 0.75rem;
+        padding: 0.5rem 1rem;
+        background: rgba(102, 126, 234, 0.1);
+        color: var(--primary-color);
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: center;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+
+    .view-data-link:hover {
+        background: var(--primary-color);
+        color: white;
+        transform: translateX(4px);
+    }
+
+    /* Revenue Cards */
+    .revenue-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .revenue-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        color: white;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .revenue-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .revenue-card.alt {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
+    }
+
+    .revenue-card h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+    }
+
+    .revenue-amount {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+    }
+
+    .revenue-detail {
+        font-size: 0.875rem;
+        opacity: 0.8;
+    }
+
+    /* Activity Section */
+    .activity-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .activity-card {
+        background: var(--bg-primary);
+        border-radius: 20px;
+        padding: 2rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border-color);
+    }
+
+    .activity-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .activity-header h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .view-all-btn {
+        color: var(--primary-color);
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.3s;
+    }
+
+    .view-all-btn:hover {
+        color: var(--primary-dark);
+        gap: 0.5rem;
+    }
+
+    /* Table Styles */
+    .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 0.5rem;
+    }
+
+    .modern-table tbody tr {
+        background: var(--bg-secondary);
+        transition: all 0.3s;
+    }
+
+    .modern-table tbody tr:hover {
+        transform: scale(1.01);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .modern-table td {
+        padding: 1rem;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+    }
+
+    .modern-table td:first-child {
+        border-radius: 12px 0 0 12px;
+    }
+
+    .modern-table td:last-child {
+        border-radius: 0 12px 12px 0;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
+
+    .status-badge {
+        padding: 0.375rem 0.875rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .status-badge.active {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--secondary-color);
+    }
+
+    .status-badge.pending {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+    }
+
+    .status-badge.completed {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--info-color);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .action-btn {
+        background: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: 16px;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        text-decoration: none;
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .action-btn:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .action-icon {
         width: 48px;
         height: 48px;
         border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.5rem;
     }
 
-    .stat-icon.purple {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .stat-icon.green {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-    }
-
-    .stat-icon.orange {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        color: white;
-    }
-
-    .stat-icon.blue {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 800;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
-        line-height: 1;
-    }
-
-    .stat-change {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-    }
-
-    .stat-change.positive {
-        background: rgba(16, 185, 129, 0.1);
-        color: var(--secondary-color);
-    }
-
-    .stat-change.negative {
-        background: rgba(239, 68, 68, 0.1);
-        color: var(--danger-color);
-    }
-
-    /* Firebase Data Styles */
-    .collection-card {
-        background: var(--bg-primary);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border-color);
-        margin-bottom: 1.5rem;
-    }
-
-    .collection-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--border-color);
-    }
-
-    .collection-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-
-    .collection-count {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-size: 0.875rem;
-        font-weight: 600;
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-
-    .summary-totals {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .summary-card {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .summary-label {
-        font-size: 0.875rem;
-        opacity: 0.9;
-        margin-bottom: 0.5rem;
-    }
-
-    .summary-value {
-        font-size: 2rem;
-        font-weight: 800;
-        margin-bottom: 0.25rem;
-        line-height: 1;
-    }
-
-    .summary-count {
-        font-size: 0.75rem;
-        opacity: 0.8;
-    }
-
-    .data-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-    }
-
-    .data-table th {
-        background: var(--bg-secondary);
-        padding: 1rem;
-        text-align: left;
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 0.875rem;
-        border-bottom: 2px solid var(--border-color);
-        white-space: nowrap;
-    }
-
-    .data-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--border-color);
-        color: var(--text-primary);
-        font-size: 0.875rem;
-    }
-
-    .data-table tbody tr {
-        transition: all 0.2s ease;
-    }
-
-    .data-table tbody tr:hover {
-        background: var(--bg-secondary);
-        transform: scale(1.002);
-    }
-
-    .data-table tbody tr:nth-child(even) {
-        background: rgba(0, 0, 0, 0.02);
-    }
-
-    .dark-mode .data-table tbody tr:nth-child(even) {
-        background: rgba(255, 255, 255, 0.02);
-    }
-
-    .no-data {
+    .empty-state {
         text-align: center;
         padding: 4rem 2rem;
         color: var(--text-secondary);
-        background: var(--bg-primary);
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
-        border: 1px solid var(--border-color);
     }
 
-    .no-data svg {
+    .empty-state-icon {
+        font-size: 4rem;
         opacity: 0.3;
         margin-bottom: 1rem;
     }
 
-    .no-data h3 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--text-primary);
-        margin-bottom: 0.5rem;
+    .db-overview-item {
+        padding: 1rem;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        transition: all 0.3s;
+        cursor: pointer;
     }
 
-    .no-data p {
-        font-size: 1rem;
-        color: var(--text-secondary);
+    .db-overview-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
     }
 
-    .view-all-link {
-        text-align: center;
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--border-color);
-        color: var(--text-secondary);
-        font-size: 0.875rem;
-    }
-
-    .view-all-link a {
-        color: var(--primary-color);
-        font-weight: 600;
-        text-decoration: none;
-        transition: all 0.3s ease;
-    }
-
-    .view-all-link a:hover {
-        color: var(--primary-dark);
-        text-decoration: underline;
+    @media (max-width: 1024px) {
+        .activity-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     @media (max-width: 768px) {
         .stats-grid {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 1fr;
         }
 
-        .collection-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
+        .stat-card {
+            padding: 1.5rem;
         }
 
-        .data-table {
-            font-size: 0.75rem;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 0.75rem 0.5rem;
+        .stat-value {
+            font-size: 2rem;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Stats Grid -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-header">
-            <span class="stat-label">Total Collections</span>
-            <div class="stat-icon purple">📁</div>
+<div class="dashboard-container">
+    <!-- Top Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-content">
+                    <div class="stat-label">Total Records</div>
+                    <div class="stat-value">{{ total_records|default:0 }}</div>
+                    <div class="stat-meta">
+                        <span class="stat-badge success">All Collections</span>
+                    </div>
+                </div>
+                <div class="stat-icon purple">📊</div>
+            </div>
         </div>
-        <div class="stat-value">{{ total_collections|default:0 }}</div>
-        <div class="stat-change positive">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="18 15 12 9 6 15"/>
-            </svg>
-            Active
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-content">
+                    <div class="stat-label">Firebase Users</div>
+                    <div class="stat-value">{{ db_stats.firebase_users|default:0 }}</div>
+                    <div class="stat-meta">
+                        <span class="stat-badge success">↑ {{ recent_purchases }} this week</span>
+                    </div>
+                    <a href="{% url 'model_list' 'users' %}" class="view-data-link">View All Users →</a>
+                </div>
+                <div class="stat-icon green">👥</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-content">
+                    <div class="stat-label">Purchases</div>
+                    <div class="stat-value">{{ db_stats.purchases|default:0 }}</div>
+                    <div class="stat-meta">
+                        <span class="stat-badge warning">{{ recent_purchases }} recent</span>
+                    </div>
+                    <a href="{% url 'model_list' 'purchases' %}" class="view-data-link">View All Purchases →</a>
+                </div>
+                <div class="stat-icon orange">🛒</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-content">
+                    <div class="stat-label">Notifications</div>
+                    <div class="stat-value">{{ db_stats.signal_notifications|default:0 }}</div>
+                    <div class="stat-meta">
+                        <span class="stat-badge warning">{{ unread_notifications }} unread</span>
+                    </div>
+                    <a href="{% url 'model_list' 'signal_notifications' %}" class="view-data-link">View All Notifications →</a>
+                </div>
+                <div class="stat-icon blue">🔔</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-content">
+                    <div class="stat-label">Premium Signals</div>
+                    <div class="stat-value">{{ db_stats.premium_signals|default:0 }}</div>
+                    <div class="stat-meta">
+                        <span class="stat-badge success">{{ active_subscriptions }} active</span>
+                    </div>
+                    <a href="{% url 'model_list' 'premium_signals' %}" class="view-data-link">View All Signals →</a>
+                </div>
+                <div class="stat-icon pink">📈</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-header">
+                <div class="stat-content">
+                    <div class="stat-label">Courses</div>
+                    <div class="stat-value">{{ db_stats.courses|default:0 }}</div>
+                    <div class="stat-meta">
+                        <span class="stat-badge success">Available</span>
+                    </div>
+                    <a href="{% url 'model_list' 'courses' %}" class="view-data-link">View All Courses →</a>
+                </div>
+                <div class="stat-icon indigo">📚</div>
+            </div>
         </div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-header">
-            <span class="stat-label">Total Documents</span>
-            <div class="stat-icon green">📄</div>
+    <!-- Revenue Cards -->
+    <div class="revenue-section">
+        <div class="revenue-card">
+            <h3>💰 Total Revenue</h3>
+            <div class="revenue-amount">${{ total_revenue|floatformat:2|default:"0.00" }}</div>
+            <div class="revenue-detail">
+                From {{ db_stats.purchases }} purchases and {{ db_stats.premium_payments }} premium payments
+            </div>
         </div>
-        <div class="stat-value">{{ total_documents|default:0 }}</div>
-        <div class="stat-change positive">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="18 15 12 9 6 15"/>
-            </svg>
-            Synced
+
+        <div class="revenue-card alt">
+            <h3>💳 Total Paid</h3>
+            <div class="revenue-amount">${{ total_paid|floatformat:2|default:"0.00" }}</div>
+            <div class="revenue-detail">
+                Average: ${{ purchase_stats.avg_purchase|floatformat:2|default:"0.00" }} per purchase
+            </div>
         </div>
     </div>
 
-    <div class="stat-card">
-        <div class="stat-header">
-            <span class="stat-label">Total Users</span>
-            <div class="stat-icon orange">👥</div>
-        </div>
-        <div class="stat-value">{{ total_users|default:0 }}</div>
-        <div class="stat-change positive">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="18 15 12 9 6 15"/>
-            </svg>
-            Growing
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div class="stat-header">
-            <span class="stat-label">Firebase Status</span>
-            <div class="stat-icon blue">🔥</div>
-        </div>
-        <div class="stat-value">{% if all_collections %}Active{% else %}Inactive{% endif %}</div>
-        <div class="stat-change {% if all_collections %}positive{% else %}negative{% endif %}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                {% if all_collections %}
-                <polyline points="18 15 12 9 6 15"/>
-                {% else %}
-                <polyline points="6 9 12 15 18 9"/>
-                {% endif %}
-            </svg>
-            {% if all_collections %}Connected{% else %}Disconnected{% endif %}
-        </div>
-    </div>
-</div>
-
-<!-- Firebase Collections Data -->
-{% if all_data %}
-    {% for collection_key, collection_info in all_data.items %}
-        <div class="collection-card">
-            <div class="collection-header">
-                <h2 class="collection-title">{{ collection_info.display_name }}</h2>
-                <span class="collection-count">{{ collection_info.count }} documents</span>
+    <!-- Activity Grid -->
+    <div class="activity-grid">
+        <!-- Latest Purchases -->
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3>💼 Recent Purchases</h3>
+                <a href="{% url 'firebase_data' %}?collection=purchases" class="view-all-btn">
+                    View All →
+                </a>
             </div>
 
-            {% if collection_info.totals %}
-                <div class="summary-totals">
-                    {% for field_name, totals_data in collection_info.totals.items %}
-                        <div class="summary-card">
-                            <div class="summary-label">Total {{ field_name }}</div>
-                            <div class="summary-value">{{ totals_data.value|floatformat:2 }}</div>
-                            <div class="summary-count">From {{ totals_data.count }} documents</div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            {% if collection_info.data %}
-                <div style="overflow-x: auto; border-radius: 12px;">
-                    <table class="data-table">
-                        <thead>
+            {% if latest_purchases %}
+                <table class="modern-table">
+                    <tbody>
+                        {% for purchase in latest_purchases %}
                             <tr>
-                                <th style="width: 60px; text-align: center;">#</th>
-                                {% for key, value in collection_info.data.0.items %}
-                                    {% if key not in 'id,uid,userId,user_id' %}
-                                        <th>{{ key|title }}</th>
-                                    {% endif %}
-                                {% endfor %}
+                                <td style="width: 40px;">
+                                    <span style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem;">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div class="user-avatar">
+                                            {{ purchase.firebase_user_id|slice:":1"|upper|default:"?" }}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 600;">{{ purchase.product_name|default:"Unknown Product" }}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                                {{ purchase.firebase_user_id|truncatechars:20 }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; color: var(--primary-color);">
+                                        ${{ purchase.amount|floatformat:2|default:"0.00" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge {{ purchase.status|lower }}">
+                                        {{ purchase.status|default:"Pending" }}
+                                    </span>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {% for doc in collection_info.data|slice:":10" %}
-                                <tr>
-                                    <td style="text-align: center; font-weight: 700; color: var(--primary-color);">{{ forloop.counter }}</td>
-                                    {% for key, value in doc.items %}
-                                        {% if key not in 'id,uid,userId,user_id' %}
-                                            <td>
-                                                {% if value is True %}
-                                                    <span style="background: rgba(16, 185, 129, 0.1); color: var(--secondary-color); padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 600; font-size: 0.75rem;">✓ Yes</span>
-                                                {% elif value is False %}
-                                                    <span style="background: rgba(239, 68, 68, 0.1); color: var(--danger-color); padding: 0.25rem 0.75rem; border-radius: 12px; font-weight: 600; font-size: 0.75rem;">✗ No</span>
-                                                {% elif value is None %}
-                                                    <span style="color: var(--text-tertiary); font-style: italic;">-</span>
-                                                {% else %}
-                                                    {{ value|truncatechars:50 }}
-                                                {% endif %}
-                                            </td>
-                                        {% endif %}
-                                    {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if collection_info.count > 10 %}
-                    <div class="view-all-link">
-                        Showing 10 of {{ collection_info.count }} documents.
-                        <a href="{% url 'firebase_data' %}?collection={{ collection_key }}">View all →</a>
-                    </div>
-                {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
             {% else %}
-                <div class="no-data" style="padding: 2rem;">
-                    <p>No documents found in this collection.</p>
+                <div class="empty-state">
+                    <div class="empty-state-icon">📦</div>
+                    <p>No purchases yet</p>
                 </div>
             {% endif %}
         </div>
-    {% endfor %}
-{% else %}
-    <div class="no-data">
-        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <path d="M4 7L4 4L20 4L20 7"/>
-            <rect x="4" y="7" width="16" height="13" rx="1"/>
-            <path d="M8 11L16 11M8 15L14 15"/>
-        </svg>
-        <h3>No Firebase Data Available</h3>
-        <p>Connect your Firebase account to view collections and documents.</p>
-        <div style="margin-top: 2rem;">
-            <a href="{% url 'settings' %}" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 0.75rem 2rem; border-radius: 10px; text-decoration: none; font-weight: 600; display: inline-block; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
-                Configure Firebase
+
+        <!-- Quick Actions -->
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3>⚡ Quick Actions</h3>
+            </div>
+
+            <div class="quick-actions">
+                <a href="{% url 'firebase_data' %}" class="action-btn">
+                    <div class="action-icon">🔥</div>
+                    Firebase Data
+                </a>
+
+                <a href="{% url 'settings' %}" class="action-btn">
+                    <div class="action-icon">⚙️</div>
+                    Settings
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Users and Signals -->
+    <div class="activity-grid">
+        <!-- Latest Users -->
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3>👤 Latest Users</h3>
+                <a href="{% url 'firebase_data' %}?collection=users" class="view-all-btn">
+                    View All →
+                </a>
+            </div>
+
+            {% if latest_users %}
+                <table class="modern-table">
+                    <tbody>
+                        {% for user in latest_users|slice:":5" %}
+                            <tr>
+                                <td style="width: 40px;">
+                                    <span style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem;">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 1rem;">
+                                        <div class="user-avatar">
+                                            {{ user.email|slice:":1"|upper|default:"?" }}
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 600;">{{ user.display_name|default:"No Name" }}</div>
+                                            <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                                {{ user.email|truncatechars:30 }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if user.is_premium %}
+                                        <span class="status-badge active">Premium</span>
+                                    {% else %}
+                                        <span class="status-badge pending">Free</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">👥</div>
+                    <p>No users synced yet</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Latest Signals -->
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3>📊 Latest Signals</h3>
+                <a href="{% url 'firebase_data' %}?collection=premium_signals" class="view-all-btn">
+                    View All →
+                </a>
+            </div>
+
+            {% if latest_signals %}
+                <table class="modern-table">
+                    <tbody>
+                        {% for signal in latest_signals %}
+                            <tr>
+                                <td style="width: 40px;">
+                                    <span style="font-weight: 700; color: var(--primary-color); font-size: 0.9rem;">
+                                        {{ forloop.counter }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div>
+                                        <div style="font-weight: 600;">{{ signal.symbol|default:"Unknown" }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                                            {{ signal.signal_type|default:"Signal" }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge {{ signal.status|lower }}">
+                                        {{ signal.status|default:"Active" }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📈</div>
+                    <p>No signals available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Database Stats Overview -->
+    <div class="activity-card" style="margin-top: 1.5rem;">
+        <div class="activity-header">
+            <h3>💾 Database Overview</h3>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <a href="{% url 'model_list' 'purchases' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Purchases
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.purchases }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'premium_payments' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Premium Payments
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.premium_payments }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'signal_notifications' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Signal Notifications
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.signal_notifications }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'user_progress' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        User Progress
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.user_progress }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'premium_signals' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Premium Signals
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.premium_signals }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'premium_subscriptions' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Premium Signal Subscriptions
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.premium_signal_subscriptions }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'courses' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Courses
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.courses }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'fcm_tokens' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        FCM Tokens
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.fcm_tokens }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'app_notifications' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        App Notifications
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.app_notifications }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'testimonials' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Testimonials
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.testimonials }}
+                    </div>
+                </div>
+            </a>
+
+            <a href="{% url 'model_list' 'users' %}" style="text-decoration: none;">
+                <div class="db-overview-item">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                        Firebase Users
+                    </div>
+                    <div style="font-size: 1.75rem; font-weight: 700; color: var(--text-primary);">
+                        {{ db_stats.firebase_users }}
+                    </div>
+                </div>
             </a>
         </div>
     </div>
-{% endif %}
+</div>
 {% endblock %}

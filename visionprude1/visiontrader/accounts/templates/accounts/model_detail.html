@@ -1,0 +1,274 @@
+{% extends 'accounts/base.html' %}
+{% load model_filters %}
+
+{% block title %}{{ model_config.display_name }} Details - VisionTrader{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        color: white;
+    }
+
+    .detail-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .detail-icon {
+        font-size: 3rem;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .detail-title h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .detail-subtitle {
+        margin: 0.5rem 0 0 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .detail-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .back-btn, .list-btn {
+        padding: 0.75rem 1.5rem;
+        background: white;
+        color: #667eea;
+        border: 2px solid white;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .back-btn:hover, .list-btn:hover {
+        background: rgba(255,255,255,0.1);
+        transform: translateY(-2px);
+        color: white;
+        border-color: white;
+    }
+
+    .detail-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .detail-section {
+        padding: 2rem;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .field-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .field-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .field-value {
+        font-size: 1.1rem;
+        color: #2d3748;
+        word-break: break-word;
+        padding: 0.75rem;
+        background: #f7fafc;
+        border-radius: 6px;
+        border-left: 3px solid #667eea;
+    }
+
+    .field-value.boolean-true {
+        color: #22543d;
+        background: #c6f6d5;
+        border-left-color: #38a169;
+    }
+
+    .field-value.boolean-false {
+        color: #742a2a;
+        background: #fed7d7;
+        border-left-color: #e53e3e;
+    }
+
+    .field-value.null {
+        color: #a0aec0;
+        font-style: italic;
+    }
+
+    .field-value.number {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: #2c5282;
+    }
+
+    .field-value.date {
+        color: #553c9a;
+    }
+
+    .metadata-section {
+        background: #f7fafc;
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .metadata-item {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .metadata-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #a0aec0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+
+    .metadata-value {
+        font-size: 0.95rem;
+        color: #4a5568;
+    }
+
+    .json-viewer {
+        background: #1a202c;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .section-header {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-header">
+    <div class="detail-header-left">
+        <div class="detail-icon">{{ model_config.icon }}</div>
+        <div class="detail-title">
+            <h1>{{ model_config.display_name }} Details</h1>
+            <p class="detail-subtitle">ID: {{ object.pk }}</p>
+        </div>
+    </div>
+    <div class="detail-actions">
+        <a href="{% url 'model_list' model_name %}" class="list-btn">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
+            </svg>
+            View All
+        </a>
+        <a href="{% url 'dashboard' %}" class="back-btn">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+            </svg>
+            Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="detail-container">
+    <div class="detail-section">
+        <h2 class="section-header">Record Information</h2>
+        <div class="detail-grid">
+            {% for field in field_data %}
+            {% if field.name != 'id' and field.name != 'synced_at' %}
+            <div class="field-group">
+                <div class="field-label">{{ field.verbose_name }}</div>
+                <div class="field-value
+                    {% if field.value == '✓' %}boolean-true
+                    {% elif field.value == '✗' %}boolean-false
+                    {% elif field.value == '-' %}null
+                    {% elif field.type == 'DecimalField' or field.type == 'IntegerField' or field.type == 'FloatField' %}number
+                    {% elif field.type == 'DateTimeField' or field.type == 'DateField' %}date
+                    {% endif %}">
+                    {% if field.type == 'DecimalField' and 'price' in field.name or 'amount' in field.name or 'paid' in field.name %}
+                        ${{ field.value }}
+                    {% else %}
+                        {{ field.value }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="metadata-section">
+        <div class="metadata-item">
+            <div class="metadata-label">Record ID</div>
+            <div class="metadata-value">{{ object.pk }}</div>
+        </div>
+        {% if object.firebase_id %}
+        <div class="metadata-item">
+            <div class="metadata-label">Firebase ID</div>
+            <div class="metadata-value">{{ object.firebase_id }}</div>
+        </div>
+        {% endif %}
+        {% if object.synced_at %}
+        <div class="metadata-item">
+            <div class="metadata-label">Last Synced</div>
+            <div class="metadata-value">{{ object.synced_at|date:"M d, Y H:i:s" }}</div>
+        </div>
+        {% endif %}
+        {% if object.created_at %}
+        <div class="metadata-item">
+            <div class="metadata-label">Created At</div>
+            <div class="metadata-value">{{ object.created_at|date:"M d, Y H:i:s" }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any interactive features here
+    console.log('Detail view loaded');
+});
+</script>
+{% endblock %}

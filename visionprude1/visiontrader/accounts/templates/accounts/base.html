@@ -1,9 +1,10 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{% if user.is_authenticated %}{{ user.settings.language|default:'en' }}{% else %}en{% endif %}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}VisionTrader{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -72,13 +73,38 @@
             top: 0;
             height: 100vh;
             width: var(--sidebar-width);
-            background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-            padding: 2rem 0;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #020617 100%);
+            padding: 0;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
-            box-shadow: var(--shadow-xl);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
             overflow-y: auto;
             overflow-x: hidden;
+            border-right: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .sidebar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(99,102,241,0.03)" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(%23grid)"/></svg>');
+            pointer-events: none;
+            opacity: 1;
         }
 
         .sidebar.collapsed {
@@ -86,34 +112,49 @@
         }
 
         .sidebar::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
 
         .sidebar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.6), rgba(168, 85, 247, 0.6));
+            border-radius: 4px;
+            border: 2px solid rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.8), rgba(168, 85, 247, 0.8));
         }
 
         .sidebar-header {
-            padding: 0 1.5rem 2rem;
+            padding: 2rem 1.5rem;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+            margin-bottom: 1.5rem;
+            gap: 1rem;
+            position: relative;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
         }
 
         .sidebar-logo {
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 0.75rem;
             color: white;
             text-decoration: none;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            position: relative;
+        }
+
+        .sidebar-logo:hover {
+            transform: scale(1.02);
         }
 
         .sidebar.collapsed .sidebar-logo .logo-text {
@@ -121,40 +162,125 @@
         }
 
         .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 800;
             flex-shrink: 0;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4),
+                        0 0 0 1px rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar.collapsed .logo-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
         }
 
         .logo-text {
-            font-size: 1.5rem;
+            font-size: 1.375rem;
             font-weight: 800;
             white-space: nowrap;
+            text-align: center;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .logo-tagline {
+            font-size: 0.75rem;
+            color: rgba(226, 232, 255, 0.7);
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar.collapsed .logo-tagline {
+            display: none;
         }
 
         .sidebar-toggle {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(168, 85, 247, 0.3) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.4);
             width: 36px;
             height: 36px;
-            border-radius: 8px;
-            color: white;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.9);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            align-self: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-toggle::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.6) 0%, rgba(168, 85, 247, 0.6) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-toggle:hover::before {
+            opacity: 1;
         }
 
         .sidebar-toggle:hover {
-            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            border-color: rgba(99, 102, 241, 0.6);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .sidebar-toggle svg {
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease;
         }
 
         .sidebar.collapsed .sidebar-toggle {
@@ -162,22 +288,50 @@
             margin-right: auto;
         }
 
+        .sidebar.collapsed .sidebar-toggle svg {
+            transform: rotate(180deg);
+        }
+
         .sidebar-nav {
-            padding: 0 1rem;
+            padding: 0 1rem 140px 1rem;
         }
 
         .nav-section {
             margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .nav-section::before {
+            content: '';
+            position: absolute;
+            left: 0.75rem;
+            top: 2rem;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, rgba(99, 102, 241, 0.3), transparent);
+            border-radius: 2px;
         }
 
         .nav-section-title {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 0.75rem;
-            font-weight: 600;
+            color: rgba(226, 232, 255, 0.5);
+            font-size: 0.6875rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 0 0.75rem 0.5rem;
+            letter-spacing: 0.1em;
+            padding: 0.75rem 0.75rem 0.75rem;
             transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-section-title::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.5), transparent);
+            border-radius: 2px;
         }
 
         .sidebar.collapsed .nav-section-title {
@@ -187,6 +341,10 @@
             margin: 0;
         }
 
+        .sidebar.collapsed .nav-section::before {
+            display: none;
+        }
+
         .nav-item {
             margin-bottom: 0.25rem;
         }
@@ -194,52 +352,109 @@
         .nav-link {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem;
-            color: rgba(255, 255, 255, 0.8);
+            gap: 0.875rem;
+            padding: 0.875rem 1rem 0.875rem 0.875rem;
+            color: rgba(226, 232, 255, 0.8);
             text-decoration: none;
             border-radius: 10px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 500;
+            font-size: 0.9rem;
             position: relative;
             overflow: hidden;
+            margin: 0.2rem 0;
+            border: 1px solid transparent;
         }
 
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            transform: translateX(5px);
-        }
-
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-link.active::before {
+        .nav-link::before {
             content: '';
             position: absolute;
             left: 0;
             top: 0;
             height: 100%;
-            width: 4px;
-            background: white;
-            border-radius: 0 4px 4px 0;
+            width: 3px;
+            background: linear-gradient(180deg, #6366f1, #a855f7);
+            transform: scaleY(0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .nav-link:hover {
+            background: rgba(99, 102, 241, 0.15);
+            color: #e0e7ff;
+            transform: translateX(4px);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .nav-link:hover::after {
+            opacity: 1;
+        }
+
+        .nav-link:hover::before {
+            transform: scaleY(1);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(168, 85, 247, 0.2) 100%);
+            color: #ffffff;
+            border-color: rgba(99, 102, 241, 0.4);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active::before {
+            transform: scaleY(1);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+        }
+
+        .nav-link.active::after {
+            opacity: 1;
         }
 
         .nav-icon {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 1.25rem;
+            background: rgba(99, 102, 241, 0.15);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .nav-link:hover .nav-icon {
+            background: rgba(99, 102, 241, 0.25);
+            transform: scale(1.1);
+        }
+
+        .nav-link.active .nav-icon {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.35), rgba(168, 85, 247, 0.3));
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
         }
 
         .nav-text {
             white-space: nowrap;
             transition: all 0.3s ease;
+            flex: 1;
         }
 
         .sidebar.collapsed .nav-text {
@@ -248,18 +463,124 @@
 
         .nav-badge {
             margin-left: auto;
-            background: rgba(239, 68, 68, 0.9);
+            background: linear-gradient(135deg, #ef4444, #dc2626);
             color: white;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.125rem 0.5rem;
-            border-radius: 12px;
+            font-size: 0.6875rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
             min-width: 20px;
             text-align: center;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .sidebar.collapsed .nav-badge {
             display: none;
+        }
+
+        /* Sidebar Footer/User Profile */
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 1.25rem;
+            border-top: 1px solid rgba(99, 102, 241, 0.2);
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 0.95) 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0.875rem;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-user::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-user:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .sidebar-user:hover::before {
+            opacity: 1;
+        }
+
+        .sidebar-user-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 11px;
+            border: 2px solid rgba(99, 102, 241, 0.4);
+            flex-shrink: 0;
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+        }
+
+        .sidebar-user-info {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sidebar-user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e0e7ff;
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.125rem;
+        }
+
+        .sidebar-user-role {
+            font-size: 0.7rem;
+            color: rgba(226, 232, 255, 0.6);
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .sidebar.collapsed .sidebar-user-info {
+            display: none;
+        }
+
+        .sidebar.collapsed .sidebar-user {
+            justify-content: center;
+            padding: 0.75rem;
+        }
+
+        .sidebar.collapsed .sidebar-user-avatar {
+            width: 38px;
+            height: 38px;
         }
 
         /* Main Content Area */
@@ -292,6 +613,58 @@
             display: flex;
             align-items: center;
             gap: 1.5rem;
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .topbar-logo:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .topbar-logo-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            flex-shrink: 0;
+            border-radius: 8px;
+            background: white;
+            padding: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .topbar-logo-img {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .topbar-brand-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .dark-mode .topbar-brand-name {
+            background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .page-title {
@@ -420,6 +793,95 @@
             padding: 2rem;
         }
 
+        /* Messages/Alerts */
+        .messages-container {
+            position: fixed;
+            top: calc(var(--topbar-height) + 1rem);
+            right: 2rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-width: 400px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            animation: slideInRight 0.4s ease;
+            border-left: 4px solid;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .message.success {
+            background: rgba(16, 185, 129, 0.95);
+            border-color: #059669;
+            color: white;
+        }
+
+        .message.error {
+            background: rgba(239, 68, 68, 0.95);
+            border-color: #dc2626;
+            color: white;
+        }
+
+        .message.warning {
+            background: rgba(245, 158, 11, 0.95);
+            border-color: #d97706;
+            color: white;
+        }
+
+        .message.info {
+            background: rgba(59, 130, 246, 0.95);
+            border-color: #2563eb;
+            color: white;
+        }
+
+        .message-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+            font-size: 0.9375rem;
+            font-weight: 500;
+        }
+
+        .message-close {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .message-close:hover {
+            opacity: 1;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .sidebar {
@@ -450,6 +912,14 @@
 
             .page-title {
                 font-size: 1.25rem;
+            }
+
+            .topbar-brand-name {
+                display: none;
+            }
+
+            .topbar-logo {
+                padding: 0.5rem;
             }
 
             .user-info {
@@ -503,7 +973,7 @@
         {% block extra_css %}{% endblock %}
     </style>
 </head>
-<body>
+<body{% if user.is_authenticated and user.settings.theme == 'dark' %} class="dark-mode"{% endif %}>
     {% if user.is_authenticated %}
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
@@ -511,12 +981,17 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="{% url 'dashboard' %}" class="sidebar-logo">
-                <div class="logo-icon">VT</div>
-                <span class="logo-text">VisionTrader</span>
+                <div class="logo-icon">
+                    <img src="{% static 'accounts/css/icon.png' %}" alt="VisionTrader Logo">
+                </div>
+                <div>
+                    <div class="logo-text">VisionTrader</div>
+                    <div class="logo-tagline">Trade with Vision</div>
+                </div>
             </a>
             <button class="sidebar-toggle" id="sidebarToggle">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                    <path d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
                 </svg>
             </button>
         </div>
@@ -552,6 +1027,76 @@
             </div>
 
             <div class="nav-section">
+                <div class="nav-section-title">Data Models</div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'purchases' %}" class="nav-link {% if 'purchases' in request.path %}active{% endif %}">
+                        <span class="nav-icon">💰</span>
+                        <span class="nav-text">Purchases</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'premium_payments' %}" class="nav-link {% if 'premium_payments' in request.path %}active{% endif %}">
+                        <span class="nav-icon">💎</span>
+                        <span class="nav-text">Premium Payments</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'signal_notifications' %}" class="nav-link {% if 'signal_notifications' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📢</span>
+                        <span class="nav-text">Notifications</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'user_progress' %}" class="nav-link {% if 'user_progress' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">User Progress</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'premium_signals' %}" class="nav-link {% if 'premium_signals' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">Premium Signals</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'premium_subscriptions' %}" class="nav-link {% if 'premium_subscriptions' in request.path %}active{% endif %}">
+                        <span class="nav-icon">⭐</span>
+                        <span class="nav-text">Subscriptions</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'courses' %}" class="nav-link {% if 'courses' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">Courses</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'fcm_tokens' %}" class="nav-link {% if 'fcm_tokens' in request.path %}active{% endif %}">
+                        <span class="nav-icon">🔔</span>
+                        <span class="nav-text">FCM Tokens</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'app_notifications' %}" class="nav-link {% if 'app_notifications' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📬</span>
+                        <span class="nav-text">App Notifications</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'testimonials' %}" class="nav-link {% if 'testimonials' in request.path %}active{% endif %}">
+                        <span class="nav-icon">⭐</span>
+                        <span class="nav-text">Testimonials</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{% url 'model_list' 'users' %}" class="nav-link {% if request.path == '/data/users/' or 'users' in request.path and 'model_list' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+                        <span class="nav-icon">👤</span>
+                        <span class="nav-text">Firebase Users</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-section">
                 <div class="nav-section-title">Account</div>
                 <div class="nav-item">
                     <a href="{% url 'settings' %}" class="nav-link {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
@@ -578,6 +1123,17 @@
                 </div>
             </div>
         </nav>
+
+        <!-- Sidebar Footer with User Profile -->
+        <div class="sidebar-footer">
+            <a href="{% url 'settings' %}" class="sidebar-user">
+                <img src="https://ui-avatars.com/api/?name={{ user.username }}&background=ffffff&color=6366f1&bold=true&size=128" alt="{{ user.username }}" class="sidebar-user-avatar">
+                <div class="sidebar-user-info">
+                    <span class="sidebar-user-name">{{ user.username }}</span>
+                    <span class="sidebar-user-role">{% if user.is_superuser %}Administrator{% else %}Trader{% endif %}</span>
+                </div>
+            </a>
+        </div>
     </aside>
 
     <!-- Main Content Wrapper -->
@@ -592,7 +1148,15 @@
                         <line x1="3" y1="18" x2="21" y2="18"/>
                     </svg>
                 </button>
+
+                <!-- Topbar Logo -->
+                <a href="{% url 'dashboard' %}" class="topbar-logo">
+                    <img src="{% static 'accounts/css/icon.png' %}" alt="VisionTrader" class="topbar-logo-img">
+                    <span class="topbar-brand-name">VisionTrader</span>
+                </a>
+
                 <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+
                 <div class="search-bar">
                     <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"/>
@@ -629,6 +1193,40 @@
                 </div>
             </div>
         </header>
+
+        <!-- Messages Display -->
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% else %}info{% endif %}">
+                <svg class="message-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    {% if 'success' in message.tags %}
+                    <polyline points="20 6 9 17 4 12"/>
+                    {% elif 'error' in message.tags %}
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                    {% elif 'warning' in message.tags %}
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    {% else %}
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="16" x2="12" y2="12"/>
+                    <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    {% endif %}
+                </svg>
+                <div class="message-content">{{ message }}</div>
+                <button class="message-close" onclick="this.parentElement.remove()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
 
         <!-- Main Content -->
         <main class="main-content">
@@ -668,16 +1266,66 @@
         const themeToggle = document.getElementById('themeToggle');
         const body = document.body;
 
-        themeToggle.addEventListener('click', () => {
+        themeToggle.addEventListener('click', async () => {
             body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+            const isDark = body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark);
+
+            // Save to database via AJAX
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', csrfToken);
+                formData.append('theme', isDark ? 'dark' : 'light');
+                formData.append('ajax_update', 'true');
+
+                await fetch('{% url "settings" %}', {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (error) {
+                console.error('Error saving theme:', error);
+            }
         });
 
-        // Load saved theme
-        if (localStorage.getItem('darkMode') === 'true') {
-            body.classList.add('dark-mode');
-        }
+        // Load saved theme from user settings (database is source of truth)
+        {% if user.is_authenticated %}
+            {% if user.settings.theme == 'dark' %}
+                body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'true');
+            {% else %}
+                body.classList.remove('dark-mode');
+                localStorage.setItem('darkMode', 'false');
+            {% endif %}
+        {% else %}
+            // Fall back to localStorage for non-authenticated users
+            if (localStorage.getItem('darkMode') === 'true') {
+                body.classList.add('dark-mode');
+            }
+        {% endif %}
+
+        // Auto-dismiss messages after 5 seconds
+        document.querySelectorAll('.message').forEach(message => {
+            setTimeout(() => {
+                message.style.animation = 'slideOutRight 0.4s ease';
+                setTimeout(() => message.remove(), 400);
+            }, 5000);
+        });
     </script>
+
+    <style>
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+
     {% else %}
     {% block auth_content %}{% endblock %}
     {% endif %}

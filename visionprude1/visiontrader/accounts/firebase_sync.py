@@ -5,7 +5,11 @@ Handles syncing data from Firebase Firestore to local MySQL database
 from datetime import datetime
 from django.utils import timezone
 from django.db import transaction
-from .models import Purchase, PremiumSignalPayment, SignalNotification, UserProgress
+from .models import (
+    Purchase, PremiumSignalPayment, SignalNotification, UserProgress,
+    PremiumSignal, PremiumSignalSubscription, Course, FCMToken,
+    AppNotification, Testimonial, FirebaseUser
+)
 from .firebase_service import FirebaseService
 
 
@@ -248,6 +252,323 @@ class FirebaseSyncService:
         return stats
 
     @classmethod
+    def sync_premium_signals(cls, collection_name='premium_signals'):
+        """Sync premium signals from Firebase to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        signal, created = PremiumSignal.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'signal_type': doc.get('type') or doc.get('signal_type', ''),
+                                'symbol': doc.get('symbol', ''),
+                                'entry_price': cls.parse_decimal(doc.get('entry_price') or doc.get('entryPrice')),
+                                'stop_loss': cls.parse_decimal(doc.get('stop_loss') or doc.get('stopLoss')),
+                                'take_profit': cls.parse_decimal(doc.get('take_profit') or doc.get('takeProfit')),
+                                'title': doc.get('title', ''),
+                                'description': doc.get('description', ''),
+                                'status': doc.get('status', ''),
+                                'signal_date': cls.parse_date(doc.get('signal_date') or doc.get('date') or doc.get('created_at')),
+                                'expiry_date': cls.parse_date(doc.get('expiry_date') or doc.get('expiryDate')),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing signal {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching premium signals from Firebase: {e}")
+
+        return stats
+
+    @classmethod
+    def sync_premium_signal_subscriptions(cls, collection_name='premium_signals_subscriptions'):
+        """Sync premium signal subscriptions from Firebase to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        subscription, created = PremiumSignalSubscription.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'firebase_user_id': doc.get('userId') or doc.get('uid') or doc.get('user_id', ''),
+                                'subscription_type': doc.get('subscription_type') or doc.get('subscriptionType', ''),
+                                'status': doc.get('status', ''),
+                                'start_date': cls.parse_date(doc.get('start_date') or doc.get('startDate')),
+                                'end_date': cls.parse_date(doc.get('end_date') or doc.get('endDate')),
+                                'auto_renew': doc.get('auto_renew', False) or doc.get('autoRenew', False),
+                                'price': cls.parse_decimal(doc.get('price')),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing subscription {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching subscriptions from Firebase: {e}")
+
+        return stats
+
+    @classmethod
+    def sync_courses(cls, collection_name='courses'):
+        """Sync courses from Firebase to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        course, created = Course.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'title': doc.get('title', ''),
+                                'description': doc.get('description', ''),
+                                'instructor': doc.get('instructor', ''),
+                                'duration': doc.get('duration'),
+                                'level': doc.get('level', ''),
+                                'category': doc.get('category', ''),
+                                'thumbnail_url': doc.get('thumbnail_url') or doc.get('thumbnailUrl', ''),
+                                'video_count': doc.get('video_count', 0) or doc.get('videoCount', 0),
+                                'price': cls.parse_decimal(doc.get('price')),
+                                'is_free': doc.get('is_free', False) or doc.get('isFree', False),
+                                'is_published': doc.get('is_published', True) or doc.get('isPublished', True),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing course {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching courses from Firebase: {e}")
+
+        return stats
+
+    @classmethod
+    def sync_fcm_tokens(cls, collection_name='fcm_tokens'):
+        """Sync FCM tokens from Firebase to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False, limit=500)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        token, created = FCMToken.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'firebase_user_id': doc.get('userId') or doc.get('uid') or doc.get('user_id', ''),
+                                'token': doc.get('token', firebase_id),
+                                'platform': doc.get('platform', ''),
+                                'device_info': doc.get('device_info') or doc.get('deviceInfo', ''),
+                                'is_active': doc.get('is_active', True) or doc.get('isActive', True),
+                                'last_used': cls.parse_date(doc.get('last_used') or doc.get('lastUsed') or doc.get('updated_at')),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing token {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching FCM tokens from Firebase: {e}")
+
+        return stats
+
+    @classmethod
+    def sync_app_notifications(cls, collection_name='app_notifications'):
+        """Sync app notifications from Firebase to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        notification, created = AppNotification.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'title': doc.get('title', ''),
+                                'message': doc.get('message', ''),
+                                'notification_type': doc.get('type') or doc.get('notification_type', ''),
+                                'target_audience': doc.get('target_audience') or doc.get('targetAudience', ''),
+                                'priority': doc.get('priority', ''),
+                                'scheduled_date': cls.parse_date(doc.get('scheduled_date') or doc.get('scheduledDate')),
+                                'sent_date': cls.parse_date(doc.get('sent_date') or doc.get('sentDate')),
+                                'is_sent': doc.get('is_sent', False) or doc.get('isSent', False),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing app notification {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching app notifications from Firebase: {e}")
+
+        return stats
+
+    @classmethod
+    def sync_testimonials(cls, collection_name='testimonials'):
+        """Sync testimonials from Firebase to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        testimonial, created = Testimonial.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'firebase_user_id': doc.get('userId') or doc.get('uid') or doc.get('user_id', ''),
+                                'author_name': doc.get('author_name') or doc.get('authorName', ''),
+                                'author_email': doc.get('author_email') or doc.get('authorEmail', ''),
+                                'author_avatar': doc.get('author_avatar') or doc.get('authorAvatar', ''),
+                                'content': doc.get('content', ''),
+                                'rating': doc.get('rating'),
+                                'is_approved': doc.get('is_approved', False) or doc.get('isApproved', False),
+                                'is_featured': doc.get('is_featured', False) or doc.get('isFeatured', False),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing testimonial {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching testimonials from Firebase: {e}")
+
+        return stats
+
+    @classmethod
+    def sync_firebase_users(cls, collection_name='users'):
+        """Sync Firebase users to MySQL"""
+        stats = {'created': 0, 'updated': 0, 'errors': 0, 'total': 0}
+
+        try:
+            firebase_data = FirebaseService.get_collection(collection_name, use_cache=False)
+            stats['total'] = len(firebase_data)
+
+            for doc in firebase_data:
+                try:
+                    with transaction.atomic():
+                        firebase_id = doc.get('id') or doc.get('uid')
+                        if not firebase_id:
+                            stats['errors'] += 1
+                            continue
+
+                        user, created = FirebaseUser.objects.update_or_create(
+                            firebase_id=firebase_id,
+                            defaults={
+                                'email': doc.get('email', ''),
+                                'display_name': doc.get('display_name') or doc.get('displayName', ''),
+                                'phone_number': doc.get('phone_number') or doc.get('phoneNumber', ''),
+                                'photo_url': doc.get('photo_url') or doc.get('photoUrl', ''),
+                                'is_premium': doc.get('is_premium', False) or doc.get('isPremium', False),
+                                'is_active': doc.get('is_active', True) or doc.get('isActive', True),
+                                'last_login': cls.parse_date(doc.get('last_login') or doc.get('lastLogin') or doc.get('lastSignIn')),
+                                'account_created': cls.parse_date(doc.get('account_created') or doc.get('accountCreated') or doc.get('created_at')),
+                            }
+                        )
+
+                        if created:
+                            stats['created'] += 1
+                        else:
+                            stats['updated'] += 1
+
+                except Exception as e:
+                    print(f"Error syncing user {doc.get('id')}: {e}")
+                    stats['errors'] += 1
+
+        except Exception as e:
+            print(f"Error fetching users from Firebase: {e}")
+
+        return stats
+
+    @classmethod
     def sync_collection(cls, collection_name):
         """
         Sync a specific collection based on its name
@@ -268,6 +589,13 @@ class FirebaseSyncService:
             'signal_notifications_collection': cls.sync_signal_notifications,
             'user_progress': cls.sync_user_progress,
             'user_progress_collection': cls.sync_user_progress,
+            'premium_signals': cls.sync_premium_signals,
+            'premium_signals_subscriptions': cls.sync_premium_signal_subscriptions,
+            'courses': cls.sync_courses,
+            'fcm_tokens': cls.sync_fcm_tokens,
+            'app_notifications': cls.sync_app_notifications,
+            'testimonials': cls.sync_testimonials,
+            'users': cls.sync_firebase_users,
         }
 
         # Get the appropriate sync method
